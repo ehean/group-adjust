@@ -5,37 +5,42 @@ from datetime import datetime
 
 def group_adjust(vals, groups, weights):
 
-    weighted_means = []
+    # check precondition that weights list and groups length are the same
     if len(weights) == len(groups):
-        for group, weight in zip(groups, weights):
-            groupDict = {}
-            zippedGroups = zip(group, vals)
-            for zippedGroup in zippedGroups:
-                if zippedGroup[0] not in groupDict:
-                    groupDict[zippedGroup[0]] = []
-                groupDict[zippedGroup[0]].append(zippedGroup[1])
-    
-            for key, val in groupDict.items():
-                val = [v for v in val if v != None]
-                groupDict[key] = sum(val) / len(val) * weight
+        # Multiply weights numpy array with the values matrix
+        reshaped_weights = np.array(weights, dtype=float).reshape(-1, 1)
+        original_val_matrix = np.tile(vals, (len(groups), 1))
+        weighted_val_matrix = reshaped_weights * original_val_matrix
 
-            weighted_means.append(groupDict)
+        # Iterate through each group. Create 2 lists. The list groupCounts contains the list
+        # of non-NaN elements in the group. The list groupCountsWithNaN contains the list
+        # of all elements (including NaN) in the group
+        for group, weighted_val_row in zip(groups, weighted_val_matrix):
+            groupDict = {}
+            groupCounts = []
+            groupCountsWithNaN = []
+            for zippedGroup, zippedVal in zip(group, weighted_val_row):
+                if zippedGroup not in groupDict:
+                    groupDict[zippedGroup] = True
+                    groupCounts.append(0)
+                    groupCountsWithNaN.append(0)
+                if not np.isnan(zippedVal):
+                    groupCounts[-1] += 1
+                groupCountsWithNaN[-1] += 1
+            
+            # Calculate the mean for each group and update the matrix in-place. Use np.nansum() to treat np.NaN as zeros.
+            # Use the values in groupCountsWithNaN for indexing and use the values in groupCounts for division
+            startIndex = 0
+            for count, countWithNaN in zip(groupCounts, groupCountsWithNaN):
+                weighted_val_row[startIndex:(startIndex+countWithNaN)] = np.nansum(weighted_val_row[startIndex:(startIndex+countWithNaN)]) / count
+                startIndex += countWithNaN 
+
+        # Subtract the original values from weighted means, summed by their columns
+        demeaned_vals = vals - weighted_val_matrix.sum(axis=0)
+        return demeaned_vals
+
     else:
         raise ValueError
-
-    groupIdx = 0
-    demeaned = vals
-    for group in groups:
-        valIdx = 0
-        for val, groupName in zip(vals, group):
-            if val != None:
-                demeaned[valIdx] -= weighted_means[groupIdx][groupName]
-            else:
-                demeaned[valIdx] = None
-            valIdx += 1
-        groupIdx += 1
-
-    return demeaned
 
 def test_three_groups():
     vals = [1, 2, 3, 8, 5]
@@ -74,12 +79,11 @@ def test_two_groups():
     for ans, res in zip(answer, adj_vals):
         assert abs(ans - res) < 1e-5
 
-
 def test_missing_vals():
     # If you're using NumPy or Pandas, use np.NaN
     # If you're writing pyton, use None
-    #vals = [1, np.NaN, 3, 5, 8, 7]
-    vals = [1, None, 3, 5, 8, 7]
+    vals = [1, np.NaN, 3, 5, 8, 7]
+    #vals = [1, None, 3, 5, 8, 7]
     grps_1 = ['USA', 'USA', 'USA', 'USA', 'USA', 'USA']
     grps_2 = ['MA', 'RI', 'RI', 'CT', 'CT', 'CT']
     weights = [.65, .35]
@@ -88,8 +92,8 @@ def test_missing_vals():
 
     # This should be None or np.NaN depending on your implementation
     # please feel free to change this line to match yours
-    #answer = [-2.47, np.NaN, -1.170, -0.4533333, 2.54666666, 1.54666666]
-    answer = [-2.47, None, -1.170, -0.4533333, 2.54666666, 1.54666666]
+    answer = [-2.47, np.NaN, -1.170, -0.4533333, 2.54666666, 1.54666666]
+    #answer = [-2.47, None, -1.170, -0.4533333, 2.54666666, 1.54666666]
 
     for ans, res in zip(answer, adj_vals):
         if ans is None:
@@ -99,19 +103,17 @@ def test_missing_vals():
         else:
             assert abs(ans - res) < 1e-5
 
-
 def test_weights_len_equals_group_len():
     # Need to have 1 weight for each group
 
-    # vals = [1, np.NaN, 3, 5, 8, 7]
-    vals = [1, None, 3, 5, 8, 7]
+    vals = [1, np.NaN, 3, 5, 8, 7]
+    #vals = [1, None, 3, 5, 8, 7]
     grps_1 = ['USA', 'USA', 'USA', 'USA', 'USA', 'USA']
     grps_2 = ['MA', 'RI', 'RI', 'CT', 'CT', 'CT']
     weights = [.65]
 
     with pytest.raises(ValueError):
         group_adjust(vals, [grps_1, grps_2], weights)
-
 
 def test_group_len_equals_vals_len():
     # The groups need to be same shape as vals
@@ -123,11 +125,10 @@ def test_group_len_equals_vals_len():
     with pytest.raises(ValueError):
         group_adjust(vals, [grps_1, grps_2], weights)
 
-
 def test_performance():
-    vals = 1000000*[1, None, 3, 5, 8, 7]
+    # vals = 1000000*[1, None, 3, 5, 8, 7]
     # If you're doing numpy, use the np.NaN instead
-    # vals = 1000000 * [1, np.NaN, 3, 5, 8, 7]
+    vals = 1000000 * [1, np.NaN, 3, 5, 8, 7]
     grps_1 = 1000000 * [1, 1, 1, 1, 1, 1]
     grps_2 = 1000000 * [1, 1, 1, 1, 2, 2]
     grps_3 = 1000000 * [1, 2, 2, 3, 4, 5]
@@ -137,4 +138,3 @@ def test_performance():
     group_adjust(vals, [grps_1, grps_2, grps_3], weights)
     end = datetime.now()
     diff = end - start
-

@@ -10,7 +10,8 @@ RUN ln -s /usr/bin/python3.7 /usr/bin/python3
 RUN pip3 install pytest numpy
 
 RUN mkdir /apps
-COPY /main.py /apps/main.py
+COPY /pure_python_implementation.py /apps/pure_python_implementation.py                                                               
+COPY /numpy_implementation.py /apps/numpy_implementation.py 
 
 #RUN echo "set expandtab tabstop=4 softtabstop=4 shiftwidth=4" > ~/.vimrc
 WORKDIR /apps
