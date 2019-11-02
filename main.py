@@ -1,23 +1,41 @@
 import numpy as np
-#import pandas as pd
-import statistics
+import pytest
 from pprint import pprint
+from datetime import datetime
 
 def group_adjust(vals, groups, weights):
 
-    # This is the solution to part 1
-    groupDict = {}
-    for group in groups:
-        zippedGroups = zip(group, vals)
-        for zippedGroup in zippedGroups:
-            if zippedGroup[0] not in groupDict:
-                groupDict[zippedGroup[0]] = []
-            groupDict[zippedGroup[0]].append(zippedGroup[1])
+    weighted_means = []
+    if len(weights) == len(groups):
+        for group, weight in zip(groups, weights):
+            groupDict = {}
+            zippedGroups = zip(group, vals)
+            for zippedGroup in zippedGroups:
+                if zippedGroup[0] not in groupDict:
+                    groupDict[zippedGroup[0]] = []
+                groupDict[zippedGroup[0]].append(zippedGroup[1])
     
-    for key, val in groupDict.items():
-        groupDict[key] = statistics.mean(val)
+            for key, val in groupDict.items():
+                val = [v for v in val if v != None]
+                groupDict[key] = sum(val) / len(val) * weight
 
-    pprint(groupDict)
+            weighted_means.append(groupDict)
+    else:
+        raise ValueError
+
+    groupIdx = 0
+    demeaned = vals
+    for group in groups:
+        valIdx = 0
+        for val, groupName in zip(vals, group):
+            if val != None:
+                demeaned[valIdx] -= weighted_means[groupIdx][groupName]
+            else:
+                demeaned[valIdx] = None
+            valIdx += 1
+        groupIdx += 1
+
+    return demeaned
 
 def test_three_groups():
     vals = [1, 2, 3, 8, 5]
@@ -60,8 +78,8 @@ def test_two_groups():
 def test_missing_vals():
     # If you're using NumPy or Pandas, use np.NaN
     # If you're writing pyton, use None
-    vals = [1, np.NaN, 3, 5, 8, 7]
-    # vals = [1, None, 3, 5, 8, 7]
+    #vals = [1, np.NaN, 3, 5, 8, 7]
+    vals = [1, None, 3, 5, 8, 7]
     grps_1 = ['USA', 'USA', 'USA', 'USA', 'USA', 'USA']
     grps_2 = ['MA', 'RI', 'RI', 'CT', 'CT', 'CT']
     weights = [.65, .35]
@@ -70,8 +88,8 @@ def test_missing_vals():
 
     # This should be None or np.NaN depending on your implementation
     # please feel free to change this line to match yours
-    answer = [-2.47, np.NaN, -1.170, -0.4533333, 2.54666666, 1.54666666]
-    # answer = [-2.47, None, -1.170, -0.4533333, 2.54666666, 1.54666666]
+    #answer = [-2.47, np.NaN, -1.170, -0.4533333, 2.54666666, 1.54666666]
+    answer = [-2.47, None, -1.170, -0.4533333, 2.54666666, 1.54666666]
 
     for ans, res in zip(answer, adj_vals):
         if ans is None:
@@ -107,9 +125,9 @@ def test_group_len_equals_vals_len():
 
 
 def test_performance():
-    # vals = 1000000*[1, None, 3, 5, 8, 7]
+    vals = 1000000*[1, None, 3, 5, 8, 7]
     # If you're doing numpy, use the np.NaN instead
-    vals = 1000000 * [1, np.NaN, 3, 5, 8, 7]
+    # vals = 1000000 * [1, np.NaN, 3, 5, 8, 7]
     grps_1 = 1000000 * [1, 1, 1, 1, 1, 1]
     grps_2 = 1000000 * [1, 1, 1, 1, 2, 2]
     grps_3 = 1000000 * [1, 2, 2, 3, 4, 5]
