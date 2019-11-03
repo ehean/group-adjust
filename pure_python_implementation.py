@@ -10,19 +10,19 @@ def group_adjust(vals, groups, weights):
     if len(weights) == len(groups):
         for group, weight in zip(groups, weights):
             # Create dictionary to store the list of values for the given group name
-            groupDict = {}
-            for zippedGroup, zippedVal in zip(group, vals):
-                if zippedGroup not in groupDict:
-                    groupDict[zippedGroup] = []
-                groupDict[zippedGroup].append(zippedVal)
+            group_dict = {}
+            for zipped_group, zipped_val in zip(group, vals):
+                if zipped_group not in group_dict:
+                    group_dict[zipped_group] = []
+                group_dict[zipped_group].append(zipped_val)
     
             # Calculate the weighted mean for the given group name
-            for key, val in groupDict.items():
+            for key, val in group_dict.items():
                 # remove the None elements from the list of vals
                 val = [v for v in val if v != None]
-                groupDict[key] = sum(val) / len(val) * weight
+                group_dict[key] = sum(val) / len(val) * weight
 
-            weighted_means.append(groupDict)
+            weighted_means.append(group_dict)
     else:
         raise ValueError
 
@@ -30,17 +30,17 @@ def group_adjust(vals, groups, weights):
     # and use the groupName to key for the weighted mean value. With each
     # group, iterate through each element in the vals list. Decrement the 
     # original value by the weighted mean (if it's not None). 
-    groupIdx = 0
+    group_idx = 0
     demeaned = vals
     for group in groups:
-        valIdx = 0
-        for val, groupName in zip(vals, group):
+        val_idx = 0
+        for val, group_name in zip(vals, group):
             if val != None:
-                demeaned[valIdx] -= weighted_means[groupIdx][groupName]
+                demeaned[val_idx] -= weighted_means[group_idx][group_name]
             else:
-                demeaned[valIdx] = None
-            valIdx += 1
-        groupIdx += 1
+                demeaned[val_idx] = None
+            val_idx += 1
+        group_idx += 1
 
     return demeaned
 

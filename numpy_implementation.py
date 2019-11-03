@@ -16,24 +16,24 @@ def group_adjust(vals, groups, weights):
         # of non-NaN elements in the group. The list groupCountsWithNaN contains the list
         # of all elements (including NaN) in the group
         for group, weighted_val_row in zip(groups, weighted_val_matrix):
-            groupDict = {}
-            groupCounts = []
-            groupCountsWithNaN = []
-            for zippedGroup, zippedVal in zip(group, weighted_val_row):
-                if zippedGroup not in groupDict:
-                    groupDict[zippedGroup] = True
-                    groupCounts.append(0)
-                    groupCountsWithNaN.append(0)
-                if not np.isnan(zippedVal):
-                    groupCounts[-1] += 1
-                groupCountsWithNaN[-1] += 1
+            group_dict = {}
+            group_counts = []
+            group_counts_with_NaN = []
+            for zipped_group, zipped_val in zip(group, weighted_val_row):
+                if zipped_group not in group_dict:
+                    group_dict[zipped_group] = True
+                    group_counts.append(0)
+                    group_counts_with_NaN.append(0)
+                if not np.isnan(zipped_val):
+                    group_counts[-1] += 1
+                group_counts_with_NaN[-1] += 1
             
             # Calculate the mean for each group and update the matrix in-place. Use np.nansum() to treat np.NaN as zeros.
             # Use the values in groupCountsWithNaN for indexing and use the values in groupCounts for division
-            startIndex = 0
-            for count, countWithNaN in zip(groupCounts, groupCountsWithNaN):
-                weighted_val_row[startIndex:(startIndex+countWithNaN)] = np.nansum(weighted_val_row[startIndex:(startIndex+countWithNaN)]) / count
-                startIndex += countWithNaN 
+            start_index = 0
+            for count, count_with_NaN in zip(group_counts, group_counts_with_NaN):
+                weighted_val_row[start_index:(start_index+count_with_NaN)] = np.nansum(weighted_val_row[start_index:(start_index+count_with_NaN)]) / count
+                start_index += count_with_NaN 
 
         # Subtract the original values from weighted means, summed by their columns
         demeaned_vals = vals - weighted_val_matrix.sum(axis=0)
